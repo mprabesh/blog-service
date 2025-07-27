@@ -1,0 +1,77 @@
+[
+  {
+    "username": "johnsmith",
+    "name": "John Smith",
+    "password": "password123"
+  },
+  {
+    "username": "sarahjohnson", 
+    "name": "Sarah Johnson",
+    "password": "password123"
+  },
+  {
+    "username": "mikebrown",
+    "name": "Michael Brown", 
+    "password": "password123"
+  },
+  {
+    "username": "emilydavis",
+    "name": "Emily Davis",
+    "password": "password123"
+  },
+  {
+    "username": "davidwilson",
+    "name": "David Wilson",
+    "password": "password123"
+  },
+  {
+    "username": "jessicamoore",
+    "name": "Jessica Moore",
+    "password": "password123"
+  },
+  {
+    "username": "chrismiller",
+    "name": "Christopher Miller",
+    "password": "password123"
+  },
+  {
+    "username": "amandawhite",
+    "name": "Amanda White",
+    "password": "password123"
+  },
+  {
+    "username": "ryangarcia",
+    "name": "Ryan Garcia",
+    "password": "password123"
+  },
+  {
+    "username": "lisaanderson",
+    "name": "Lisa Anderson",
+    "password": "password123"
+  },
+  {
+    "username": "alexchen",
+    "name": "Alex Chen",
+    "password": "password123"
+  },
+  {
+    "username": "marialopez",
+    "name": "Maria Lopez",
+    "password": "password123"
+  },
+  {
+    "username": "jamestaylor",
+    "name": "James Taylor",
+    "password": "password123"
+  },
+  {
+    "username": "rachelgreen",
+    "name": "Rachel Green",
+    "password": "password123"
+  },
+  {
+    "username": "kevinlee",
+    "name": "Kevin Lee",
+    "password": "password123"
+  }
+]
