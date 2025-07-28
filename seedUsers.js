@@ -14,8 +14,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const User = require("./models/user");
 
-// Load local environment for seed scripts
-require("dotenv").config({ path: '.env.local' });
+// Load environment variables
+require("dotenv").config();
 const config = require("./utils/config");
 
 // Salt rounds for password hashing (same as in your controller)
