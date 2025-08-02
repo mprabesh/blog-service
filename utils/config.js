@@ -46,7 +46,7 @@ const PORT =
     ? process.env.PROD_PORT
     : process.env.NODE_ENV === "development"
     ? process.env.DEV_PORT
-    : process.env.PORT;
+    : process.env.TEST_PORT;
 
 /**
  * JWT Secret Key

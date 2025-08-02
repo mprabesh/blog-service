@@ -23,6 +23,7 @@ const uniqueValidator = require("mongoose-unique-validator");
  * Fields:
  * - username: Unique identifier for login (min 3 characters, unique across users)
  * - name: User's display name (min 3 characters)
+ * - email: User's email address (unique, validated format)
  * - passwordHash: Bcrypt hashed password (never store plain text passwords)
  * - blogs: Array of ObjectId references to Blog documents (one-to-many relationship)
  */
@@ -40,6 +41,21 @@ const userSchema = new mongoose.Schema({
     type: String, 
     required: true,      // Must be provided during user creation
     minLength: 3         // Minimum 3 characters
+  },
+
+  // User's email address
+  email: {
+    type: String,
+    required: true,      // Must be provided during user creation
+    unique: true,        // Must be unique across all users
+    lowercase: true,     // Convert to lowercase before saving
+    validate: {
+      validator: function(email) {
+        // Email regex pattern for validation
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      },
+      message: 'Please enter a valid email address'
+    }
   },
   
   // Hashed password (never store plain text)

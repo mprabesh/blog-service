@@ -47,14 +47,26 @@ app.use(express.json());
 // Configure CORS for multi-VM deployment
 app.use(cors({
   origin: [
-    'http://localhost:3001',           // Local development
+    // Development servers
+    'http://localhost:3001',           // Docker frontend
+    'http://localhost:5173',           // Vite dev server default
+    'http://localhost:4173',           // Vite preview server
+    'http://localhost:3000',           // Alternative dev port
     'http://localhost',                // Local frontend on port 80
+    'http://127.0.0.1:5173',          // Vite dev server (127.0.0.1)
+    'http://127.0.0.1:3001',          // Alternative localhost
+    
+    // Production/VM deployments
     'http://192.168.148.137',          // Frontend VM on port 80
     'http://192.168.148.139',          // Another frontend VM on port 80
     /^http:\/\/192\.168\.148\.\d+$/, // Allow any IP in the 192.168.148.x range on port 80
     /^http:\/\/192\.168\.148\.\d+:3001$/, // Allow any IP in the 192.168.148.x range on port 3001
     /^http:\/\/192\.168\.248\.\d+$/,  // Allow any IP in the 192.168.248.x range on port 80
-    /^http:\/\/192\.168\.248\.\d+:8081$/ // Allow backend health checks
+    /^http:\/\/192\.168\.248\.\d+:8081$/, // Allow backend health checks
+    
+    // Development catch-all (be more permissive in development)
+    /^http:\/\/localhost:\d+$/,       // Any localhost port
+    /^http:\/\/127\.0\.0\.1:\d+$/     // Any 127.0.0.1 port
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

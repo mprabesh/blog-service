@@ -14,8 +14,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const User = require("./models/user");
 
-// Load environment variables
-require("dotenv").config();
+// Load local environment for seed scripts
+require("dotenv").config({ path: '.env.local' });
 const config = require("./utils/config");
 
 // Salt rounds for password hashing (same as in your controller)
@@ -31,76 +31,91 @@ const seedUsers = [
   {
     username: "rupinder",
     name: "Rupinder Kaur",
+    email: "rupinder.kaur@example.com",
     password: "password123"
   },
   {
     username: "prabesh",
     name: "Prabesh Magar",
+    email: "prabesh.magar@example.com",
     password: "password123"
   },
   {
     username: "mikebrown",
     name: "Michael Brown",
+    email: "michael.brown@example.com",
     password: "password123"
   },
   {
     username: "emilydavis",
     name: "Emily Davis",
+    email: "emily.davis@example.com",
     password: "password123"
   },
   {
     username: "davidwilson",
     name: "David Wilson",
+    email: "david.wilson@example.com",
     password: "password123"
   },
   {
     username: "jessicamoore",
     name: "Jessica Moore",
+    email: "jessica.moore@example.com",
     password: "password123"
   },
   {
     username: "chrismiller",
     name: "Christopher Miller",
+    email: "chris.miller@example.com",
     password: "password123"
   },
   {
     username: "amandawhite",
     name: "Amanda White",
+    email: "amanda.white@example.com",
     password: "password123"
   },
   {
     username: "ryangarcia",
     name: "Ryan Garcia",
+    email: "ryan.garcia@example.com",
     password: "password123"
   },
   {
     username: "lisaanderson",
     name: "Lisa Anderson",
+    email: "lisa.anderson@example.com",
     password: "password123"
   },
   {
     username: "alexchen",
     name: "Alex Chen",
+    email: "alex.chen@example.com",
     password: "password123"
   },
   {
     username: "marialopez",
     name: "Maria Lopez",
+    email: "maria.lopez@example.com",
     password: "password123"
   },
   {
     username: "jamestaylor",
     name: "James Taylor",
+    email: "james.taylor@example.com",
     password: "password123"
   },
   {
     username: "rachelgreen",
     name: "Rachel Green",
+    email: "rachel.green@example.com",
     password: "password123"
   },
   {
     username: "kevinlee",
     name: "Kevin Lee",
+    email: "kevin.lee@example.com",
     password: "password123"
   }
 ];
@@ -158,6 +173,7 @@ const seedDatabase = async () => {
         return {
           username: userData.username,
           name: userData.name,
+          email: userData.email,
           passwordHash: passwordHash,
           blogs: [] // Empty blogs array initially
         };
@@ -204,18 +220,19 @@ const seedDatabase = async () => {
  * 
  * @param {string} username - Unique username
  * @param {string} name - User's display name  
+ * @param {string} email - User's email address
  * @param {string} password - Plain text password (will be hashed)
  * @returns {Promise<Object>} - Created user object
  */
-const createUser = async (username, name, password) => {
+const createUser = async (username, name, email, password) => {
   try {
     await mongoose.connect(config.mongoURL);
     
     const passwordHash = await hashPassword(password);
-    const newUser = new User({ username, name, passwordHash });
+    const newUser = new User({ username, name, email, passwordHash });
     const result = await newUser.save();
     
-    console.log(`✅ User created: ${result.name} (@${result.username})`);
+    console.log(`✅ User created: ${result.name} (@${result.username}) - ${result.email}`);
     await mongoose.connection.close();
     
     return result;
@@ -237,7 +254,8 @@ module.exports = {
   createUser,
   seedUsers: seedUsers.map(user => ({ 
     username: user.username, 
-    name: user.name 
+    name: user.name,
+    email: user.email
     // Don't export passwords
   }))
 };

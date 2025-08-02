@@ -13,17 +13,33 @@ userRoute.get("/", async (req, res, next) => {
 });
 
 userRoute.post("/", async (req, res, next) => {
-  const { username, name, password } = req.body;
+  const { username, name, email, password } = req.body;
+  
+  // Validate password length
   if (password.length < 3) {
-    res.status(403).json({
-      error: "`password` is shorter than the minimum allowed length (3).",
+    return res.status(400).json({
+      error: "Password is shorter than the minimum allowed length (3).",
     });
   }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({
+      error: "Please enter a valid email address.",
+    });
+  }
+
   const saltRounds = 10;
 
   try {
     const passwordHash = await bcrypt.hash(password, saltRounds);
-    const newUser = new User({ username, name, passwordHash });
+    const newUser = new User({ 
+      username, 
+      name, 
+      email: email.toLowerCase(), // Ensure email is stored in lowercase
+      passwordHash 
+    });
     const result = await newUser.save();
     res.status(201).json(result);
   } catch (err) {
