@@ -64,7 +64,11 @@ app.use(cors({
     /^http:\/\/192\.168\.248\.\d+$/,  // Allow any IP in the 192.168.248.x range on port 80
     /^http:\/\/192\.168\.248\.\d+:8081$/, // Allow backend health checks
     /^http:\/\/10\.0\.2\.\d+$/,          // Allow any IP in the 10.0.2.x range on port 80 (VirtualBox NAT)
+    /^http:\/\/10\.0\.2\.\d+:3001$/,     // Allow any IP in the 10.0.2.x range on port 3001 (VirtualBox NAT)
     /^http:\/\/10\.0\.2\.\d+:3003$/,     // Allow any IP in the 10.0.2.x range on port 3003 (VirtualBox NAT)
+    /^http:\/\/10\.0\.2\.\d+:5173$/,     // Allow any IP in the 10.0.2.x range on port 5173 (Vite dev)
+    'http://10.0.2.4:3003',             // Specific VirtualBox NAT frontend
+    'http://10.0.2.2:3003',             // VirtualBox host gateway
 
     // Development catch-all (be more permissive in development)
     /^http:\/\/localhost:\d+$/,       // Any localhost port
