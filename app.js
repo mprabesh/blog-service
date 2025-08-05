@@ -124,9 +124,19 @@ if (process.env.NODE_ENV === "test") {
  * 
  * Routes:
  * - GET / : Basic server status
+ * - GET /api/health : Standard health check endpoint
  * - GET /api/ping : Detailed health information with timestamp
  */
 app.get("/",(req,res)=>{res.send("Server is running")});
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ 
+    status: "healthy", 
+    service: "blog-service",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    uptime: process.uptime()
+  });
+});
 app.get("/api/ping", (req, res) => {
   res.status(200).json({ 
     status: "ok", 
