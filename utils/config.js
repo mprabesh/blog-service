@@ -57,5 +57,17 @@ const PORT =
  */
 const SECRET_KEY = process.env.SECRET_KEY;
 
+/**
+ * Redis Configuration
+ * 
+ * Redis connection URL for caching and session storage.
+ * Falls back to localhost for development if not specified.
+ * Used for:
+ * - Blog post caching
+ * - User session management
+ * - Real-time data storage
+ */
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
 // Export all configuration values for use throughout the application
-module.exports = { mongoURL, PORT, SECRET_KEY };
+module.exports = { mongoURL, PORT, SECRET_KEY, REDIS_URL };

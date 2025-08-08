@@ -16,7 +16,7 @@
  * - Unknown endpoint handling (404 errors)
  */
 
-const { info } = require("./logger");
+const { info, error: logError, warn } = require("./logger");
 const { SECRET_KEY } = require("./config");
 const jwt = require("jsonwebtoken");
 
@@ -61,12 +61,44 @@ const requestLogger = (request, response, next) => {
  * @returns {Object} 401 error if no authorization header found
  */
 const tokenExtractor = (req, res, next) => {
-  if (!req.headers.authorization) {
-    return res.status(401).json({ error: "missing token" });
+  try {
+    const authorization = req.headers.authorization;
+    
+    if (!authorization) {
+      warn(`Token extraction failed: No authorization header - ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Authentication required",
+        message: "Missing authorization header"
+      });
+    }
+    
+    if (!authorization.startsWith('Bearer ')) {
+      warn(`Token extraction failed: Invalid authorization format - ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Invalid authorization format",
+        message: "Authorization header must start with 'Bearer '"
+      });
+    }
+    
+    const token = authorization.split(" ")[1];
+    
+    if (!token || token.trim().length === 0) {
+      warn(`Token extraction failed: Empty token - ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Authentication required",
+        message: "Missing authentication token"
+      });
+    }
+    
+    req.token = token.trim();
+    next();
+  } catch (err) {
+    logError('Token extraction error:', err.message);
+    return res.status(500).json({ 
+      error: "Authentication processing error",
+      message: "Unable to process authentication"
+    });
   }
-  const token = req.headers.authorization.split(" ")[1];
-  req.token = token;
-  next();
 };
 
 /**
@@ -88,13 +120,86 @@ const tokenExtractor = (req, res, next) => {
  * @returns {Object} 401 error if token is invalid
  */
 const userExtractor = (req, res, next) => {
-  const token = req.token;
-  const decodedToken = jwt.verify(token, SECRET_KEY);
-  if (!decodedToken.userId) {
-    return res.status(401).json({ error: "invalid token" });
+  try {
+    const token = req.token;
+    
+    if (!token) {
+      warn(`User extraction failed: No token in request - ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Authentication required",
+        message: "No authentication token found"
+      });
+    }
+    
+    if (!SECRET_KEY) {
+      logError('JWT verification failed: SECRET_KEY not configured');
+      return res.status(500).json({ 
+        error: "Authentication service error",
+        message: "Authentication service is not properly configured"
+      });
+    }
+    
+    const decodedToken = jwt.verify(token, SECRET_KEY);
+    
+    if (!decodedToken || typeof decodedToken !== 'object') {
+      warn(`User extraction failed: Invalid token payload - ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Invalid token",
+        message: "Authentication token is malformed"
+      });
+    }
+    
+    if (!decodedToken.userId) {
+      warn(`User extraction failed: Missing userId in token - ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Invalid token",
+        message: "Authentication token is missing user information"
+      });
+    }
+    
+    // Add user information to request
+    req.user = decodedToken.userId;
+    req.userInfo = {
+      userId: decodedToken.userId,
+      username: decodedToken.username,
+      name: decodedToken.name
+    };
+    
+    next();
+  } catch (err) {
+    logError('User extraction error:', err.message);
+    
+    // Handle specific JWT errors
+    if (err.name === 'TokenExpiredError') {
+      warn(`Token expired for ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Token expired",
+        message: "Your session has expired. Please log in again"
+      });
+    }
+    
+    if (err.name === 'JsonWebTokenError') {
+      warn(`Invalid token for ${req.method} ${req.path}: ${err.message}`);
+      return res.status(401).json({ 
+        error: "Invalid token",
+        message: "Authentication token is invalid"
+      });
+    }
+    
+    if (err.name === 'NotBeforeError') {
+      warn(`Token not active yet for ${req.method} ${req.path}`);
+      return res.status(401).json({ 
+        error: "Token not active",
+        message: "Authentication token is not yet valid"
+      });
+    }
+    
+    // Generic authentication error
+    return res.status(401).json({ 
+      error: "Authentication failed",
+      message: "Unable to verify authentication token"
+    });
   }
-  req.user = decodedToken.userId;
-  next();
 };
 
 /**
@@ -108,7 +213,13 @@ const userExtractor = (req, res, next) => {
  * @returns {Object} 404 error response
  */
 const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: "unknown endpoint" });
+  warn(`Unknown endpoint accessed: ${request.method} ${request.path}`);
+  response.status(404).json({ 
+    error: "unknown endpoint",
+    message: `Cannot ${request.method} ${request.path}`,
+    path: request.path,
+    method: request.method
+  });
 };
 
 /**
@@ -122,6 +233,8 @@ const unknownEndpoint = (request, response) => {
  * - ValidationError: Mongoose validation failures
  * - TokenExpiredError: Expired JWT tokens
  * - JsonWebTokenError: Invalid JWT tokens
+ * - MongoError: Database-related errors
+ * - SyntaxError: JSON parsing errors
  * 
  * @param {Error} error - Error object caught by Express
  * @param {Object} request - Express request object
@@ -130,18 +243,113 @@ const unknownEndpoint = (request, response) => {
  * @returns {Object} Appropriate error response based on error type
  */
 const errorHandler = (error, request, response, next) => {
-  info(error.message);
-
+  logError(`Error in ${request.method} ${request.path}:`, error.message);
+  
+  // MongoDB CastError - Invalid ObjectId format
   if (error.name === "CastError") {
-    return response.status(400).send({ error: "malformatted id" });
-  } else if (error.name === "ValidationError") {
-    return response.status(400).json({ error: error.message });
-  } else if (error.name === "TokenExpiredError") {
-    return response.status(400).json({ error: error.message });
-  } else if (error.name === "JsonWebTokenError") {
-    return response.status(401).json({ error: error.message });
+    return response.status(400).json({ 
+      error: "Invalid ID format",
+      message: "The provided ID is not in the correct format",
+      field: error.path
+    });
   }
-  next(error);
+  
+  // Mongoose ValidationError - Schema validation failures
+  if (error.name === "ValidationError") {
+    const errors = Object.values(error.errors).map(err => ({
+      field: err.path,
+      message: err.message,
+      value: err.value
+    }));
+    
+    return response.status(400).json({ 
+      error: "Validation failed",
+      message: "One or more fields contain invalid data",
+      details: errors
+    });
+  }
+  
+  // JWT TokenExpiredError
+  if (error.name === "TokenExpiredError") {
+    return response.status(401).json({ 
+      error: "Token expired",
+      message: "Your session has expired. Please log in again",
+      expiredAt: error.expiredAt
+    });
+  }
+  
+  // JWT JsonWebTokenError
+  if (error.name === "JsonWebTokenError") {
+    return response.status(401).json({ 
+      error: "Invalid token",
+      message: "Authentication token is invalid or malformed"
+    });
+  }
+  
+  // MongoDB Duplicate Key Error
+  if (error.code === 11000) {
+    const field = Object.keys(error.keyPattern)[0];
+    const value = error.keyValue[field];
+    
+    return response.status(409).json({ 
+      error: "Duplicate entry",
+      message: `${field} '${value}' already exists`,
+      field: field
+    });
+  }
+  
+  // MongoDB Network/Connection Errors
+  if (error.name === "MongoNetworkError" || error.name === "MongoTimeoutError") {
+    return response.status(503).json({ 
+      error: "Database unavailable",
+      message: "Unable to connect to the database. Please try again later"
+    });
+  }
+  
+  // JSON Syntax Error (malformed request body)
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return response.status(400).json({ 
+      error: "Invalid JSON",
+      message: "Request body contains invalid JSON"
+    });
+  }
+  
+  // Request Entity Too Large
+  if (error.status === 413) {
+    return response.status(413).json({ 
+      error: "Request too large",
+      message: "Request body exceeds the maximum allowed size"
+    });
+  }
+  
+  // Rate Limiting Error
+  if (error.status === 429) {
+    return response.status(429).json({ 
+      error: "Too many requests",
+      message: "Rate limit exceeded. Please slow down your requests"
+    });
+  }
+  
+  // Generic server errors
+  logError('Unhandled error:', {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    path: request.path,
+    method: request.method
+  });
+  
+  // Don't expose internal error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  response.status(500).json({ 
+    error: "Internal server error",
+    message: "An unexpected error occurred. Please try again later",
+    ...(isDevelopment && { 
+      details: error.message,
+      stack: error.stack 
+    })
+  });
 };
 
 // Export all middleware functions for use in the main application

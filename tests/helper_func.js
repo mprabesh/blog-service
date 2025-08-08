@@ -5,14 +5,24 @@ const app = require("../app");
 const api = supertest(app);
 const bcrypt = require("bcrypt");
 const { newUser, newBlogPost3 } = require("./dummyTestData");
+const { cache } = require("../utils/redis");
 
 const initialTestFunc = async () => {
+  // Clear cache before each test
+  try {
+    await cache.clearPattern("*");
+  } catch (error) {
+    // Cache might not be available in all test scenarios
+    console.warn("Cache clear failed (this is OK in tests):", error.message);
+  }
+
   await User.deleteMany({});
   await Blog.deleteMany({});
   const passwordHash = await bcrypt.hash(newUser.password, 10);
   const myUser = new User({
     username: newUser.username,
     name: newUser.name,
+    email: newUser.email || "test@example.com", // Add email for compatibility
     passwordHash,
   });
   const userSaved = await myUser.save();

@@ -34,11 +34,11 @@ RUN chown -R nodeuser:nodejs /usr/src/app
 # Switch to non-root user
 USER nodeuser
 
-# Health check
+# Health check using our enhanced health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:${PROD_PORT:-8081}/api/ping || exit 1
+    CMD curl -f http://localhost:${PROD_PORT:-8081}/health || exit 1
 
-# Expose port
+# Expose port (default 8081, override with PROD_PORT env var at runtime)
 EXPOSE 8081
 
 # Use dumb-init to handle signals properly
